@@ -1,53 +1,3 @@
-/**
- * This file has a bunch of example patterns, each illustrating the key
- * concepts and tools of the LX framework.
- */
-
- class MoveTheXPosition extends LXPattern
- {
-  private final BasicParameter xPos = new BasicParameter("XPos", 0, model.xMin, model.xMax);
-  private final BasicParameter xSpeed = new BasicParameter("Speed", 1000, 0, 20000);
-  private final BasicParameter colorSpread = new BasicParameter("Clr", 3, 0, 3);
-
-  
-  public MoveTheXPosition(LX lx) 
-  {
-    super(lx);
-    addParameter(xPos);
-    addParameter(colorSpread);
-    addParameter(xSpeed);
-    addLayer(new MovingTheX(lx));
-  }
-
-  private class MovingTheX extends LXLayer
-  {
-    private final SinLFO xPeriod = new SinLFO(xSpeed.getValuef(), xSpeed.getValuef(), 20000); 
-
-    private MovingTheX(LX lx)
-    {
-      super(lx);
-      addModulator(xSpeed).start();
-    }
-    public void run(double deltaMs){
-      float hueValue = lx.getBaseHuef();
-      for (LXPoint p : model.points) 
-      {
-        // This is a common technique for modulating brightness.
-        // You can use abs() to determine the distance between two
-        // values. The further away this point is from an exact
-        // point, the more we decrease its brightness
-        float distanceFromCenter = dist(xPeriod.getValuef(), p.x, model.cx, model.cy);
-        float brightnessValue = max(0, 100 - abs(p.x - xPeriod.getValuef()));
-        colors[p.index] = lx.hsb(
-         lx.getBaseHuef() + colorSpread.getValuef() * distanceFromCenter,
-         100, 
-         brightnessValue);
-      }
-    }
-  }
- }
- 
-
 class LayerDemoPattern extends LXPattern {
   
   private final BasicParameter colorSpread = new BasicParameter("Clr", 3, 0, 3);
@@ -171,6 +121,7 @@ class TestHuePattern extends LXPattern
 }
 
 
+
 class TestXPattern extends LXPattern 
 {
   private final SinLFO xPos = new SinLFO(model.xMin, model.xMax, 4000);
@@ -234,3 +185,34 @@ class TestZPattern extends LXPattern
   }
 }
 
+class TestProjectionPattern extends LXPattern 
+{
+  private final LXProjection projection;
+  private final SawLFO angle = new SawLFO(0, TWO_PI, 15000);
+  
+  public TestProjectionPattern(LX lx) 
+  {
+    super(lx);
+    projection = new LXProjection(model);
+    addModulator(angle).trigger();
+  }
+  
+  public void run(double deltaMs) 
+  {
+    projection.reset();
+    projection.center();
+    projection.rotate(angle.getValuef(), 0, 0, 1);
+
+    float hv = lx.getBaseHuef();
+    for (LXVector c : projection) {
+      float d = sqrt(c.x*c.x + c.y*c.y + c.z*c.z); // distance from origin
+      // d = abs(d-60) + max(0, abs(c.z) - 20); // life saver / ring thing
+      d = max(0, abs(c.y) - 10 + .1f*abs(c.z) + .02f*abs(c.x)); // plane / spear thing
+      colors[c.index] = lx.hsb(
+        (hv + .6f*abs(c.x) + abs(c.z)) % 360,
+        100,
+        constrain(140 - 40*d, 0, 100)
+      );
+    }
+  } 
+}
