@@ -12,7 +12,7 @@ static class Model extends LXModel
     
     private static final int z = 0;
     private static final int OFFSET = FEET;
-    private static final int NUMBER_OF_LEDS = 25;
+    private static final int NUMBER_OF_LEDS = 85;
     
     private Fixture() 
     {
